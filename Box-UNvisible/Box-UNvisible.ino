@@ -1,77 +1,71 @@
-#include "Arduino.h"
-#include "SoftwareSerial.h"
-#include "DFRobotDFPlayerMini.h"
-#include "SPI.h" // SPI
-#include "MFRC522.h" // RFID
-#include "SoftwareSerial.h"
-#include "DFPlayer_Mini_Mp3.h"
+#include <SPI.h>
+#include <MFRC522.h>
+#include <SoftwareSerial.h>
+#include <DFRobotDFPlayerMini.h>
 
 #define SS_PIN 10
 #define RST_PIN 9
+#define DFPLAYER_RX_PIN 7
+#define DFPLAYER_TX_PIN 8
 
-byte readCard[4];
-String cardID = "ccdb7689"; // remplacer par l'ID de votre tag
-String tagID = "";
-SoftwareSerial mySerial(7, 8); // RX, TX
-DFRobotDFPlayerMini myDFPlayer;
-void printDetail(uint8_t type, int value);
+MFRC522 mfrc522(SS_PIN, RST_PIN);  // Initialisation du module RFID
+SoftwareSerial mySoftwareSerial(DFPLAYER_RX_PIN, DFPLAYER_TX_PIN);  // Initialisation du port série pour le lecteur MP3
+DFRobotDFPlayerMini myDFPlayer;  // Création d'une instance du lecteur MP3
 
-// Déclaration 
-MFRC522 mfrc522(SS_PIN, RST_PIN);
-
-// Tableau contentent l'ID
-byte nuidPICC[4];
-
-
-void setup()
-{ 
-  // Init RS232
+void setup() {
   Serial.begin(9600);
+  SPI.begin();
+  mfrc522.PCD_Init();
 
-  // Init SPI bus
-  SPI.begin(); 
-  mfrc522.PCD_Init(); 
-  
-  //mp3
-   mySerial.begin(9600);
-    mp3_set_serial(mySerial);
-    mp3_set_volume(30);       // fixe le son (30 maximum)
-    mp3_set_EQ(0);            // equalizer de 0 à 5
+  mySoftwareSerial.begin(9600);
+  if (!myDFPlayer.begin(mySoftwareSerial)) {
+    Serial.println("Erreur lors de la communication avec le lecteur MP3 !");
+    while (true);
+  }
+
+  Serial.println("Prêt !");
+  playStartupSound();  // Joue une musique au démarrage
 }
 
-void loop() 
-{
-  while (getID()) {
-    if (tagID == cardID) {
-      mp3_next();  // joue mp3/0001.mp3
+void loop() {
+  if (mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial()) {
+    String cardUID = "";
+    for (byte i = 0; i < mfrc522.uid.size; i++) {
+      cardUID += String(mfrc522.uid.uidByte[i] < 0x10 ? "0" : "");
+      cardUID += String(mfrc522.uid.uidByte[i], HEX);
+      cardUID.toUpperCase();
     }
-    else if(tagID == "49315499");{
-      mp3_prev();
-    }
-    
-    Serial.print("ID: ");
-    Serial.println(tagID);
-    delay(2000);
-    digitalWrite(6, LOW);
+    playSoundFromCardUID(cardUID);  // Joue la musique correspondante
+    delay(1000);  // Attente pour éviter de lire plusieurs fois la même carte
   }
 }
 
-boolean getID() {
-  if (! mfrc522.PICC_IsNewCardPresent()) {
-    return false;
-  }
 
-  if (! mfrc522.PICC_ReadCardSerial()) {
-    return false;
-  }
 
-  tagID = "";
-  
-  for (uint8_t i = 0; i < 4; i++) {
-    tagID.concat(String(mfrc522.uid.uidByte[i], HEX));
-  }
 
-  tagID.toUpperCase();
-  mfrc522.PICC_HaltA();
-  return true;
+void playSound(uint16_t soundNumber) {
+  myDFPlayer.play(soundNumber);
+  delay(500);  // Attente pour laisser le temps au lecteur MP3 de démarrer la lecture
+  while (myDFPlayer.available()) {
+    myDFPlayer.readType();
+  }
+}
+void playSoundFromCardUID(String cardUID) {
+  if (cardUID == "49315499") {
+    playSound(1);  // Joue la piste 1 du lecteur MP3
+  } else if (cardUID == "CCDB7689") {
+    playSound(2);  // Joue la piste 2 du lecteur MP3
+  } else if (cardUID == "15550C09") {
+    playSound(3);  // Joue la piste 3 du lecteur MP3
+  } else if (cardUID == "644CF11D") {
+    playSound(4);  // Joue la piste 4 du lecteur MP3
+  } else if (cardUID == "5B1D37BB") {
+    playSound(5);  // Joue la piste 5 du lecteur MP3
+  } else {
+    Serial.println("Carte UID non reconnue !");
+  }
+}
+
+void playStartupSound() {
+  playSound(0);  // Joue la piste 0 du lecteur MP3 (musique de démarrage)
 }
