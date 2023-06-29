@@ -16,7 +16,7 @@
 #define LED_RED_PIN A1
 
 MFRC522 mfrc522(SS_PIN, RST_PIN);  // Initialisation du module RFID
-SoftwareSerial mySoftwareSerial(DFPLAYER_RX_PIN, DFPLAYER_TX_PIN);  // Initialisation du port série pour le lecteur MP3
+SoftwareSerial mySoftwareSerial(DFPLAYER_RX_PIN, DFPLAYER_TX_PIN); // Initialisation du port série pour le lecteur MP3
 DFRobotDFPlayerMini myDFPlayer;  // Création d'une instance du lecteur MP3
 
 boolean button1Pressed = false;
@@ -28,10 +28,10 @@ boolean correctButtonPressed = false;
 
 // Définition des UID des badges
 String uidButton1 = "644CF11D";
-String uidButton2 = "CCDB7689";
-String uidButton3 = "15550C09";
-String uidButton4 = "5B1D37BB";
-String uidButton5 = "49315499";
+String uidButton2 = "15550C09";
+String uidButton3 = "5B1D37BB";
+String uidButton4 = "49315499";
+String uidButton5 = "CCDB7689";
 
 int currentTrackNumber = 0;
 
@@ -81,7 +81,6 @@ void loop() {
     button4Pressed = false;
     button5Pressed = false;
     correctButtonPressed = false;
-    
   }
 
   // Vérifie l'état des boutons
@@ -96,13 +95,13 @@ void playSoundFromCardUID(String cardUID) {
   if (cardUID == uidButton1) {
     playSound(1);
   } else if (cardUID == uidButton2) {
-    playSound(1);
-  } else if (cardUID == uidButton3) {
-    playSound(3);
-  } else if (cardUID == uidButton4) {
-    playSound(4);
-  } else if (cardUID == uidButton5) {
     playSound(5);
+  } else if (cardUID == uidButton3) {
+    playSound(1);
+  } else if (cardUID == uidButton4) {
+    playSound(1);
+  } else if (cardUID == uidButton5) {
+    playSound(3);
   } else {
     Serial.println("Carte UID non reconnue !");
   }
